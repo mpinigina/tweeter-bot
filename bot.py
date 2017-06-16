@@ -1,7 +1,6 @@
 import re
 import tweepy
 import argparse
-from time import sleep
 from credentials import *
 from random import uniform
 from collections import defaultdict
@@ -88,19 +87,14 @@ if __name__ == '__main__':
     query = args.query
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
-    api = tweepy.API(auth)
+    api = tweepy.API(auth, wait_on_rate_limit=True)
     model = train('tolstoy.txt')
-
     for tweet in tweepy.Cursor(api.search, q=query, lang='ru').items():
-        try:
-            if (not tweet.retweeted and 'RT @' not in tweet.text and
-                    tweet.text.endswith('?')):
-                random_phrase = generate_sentence(model)
-                api.update_status('@{} {} https://twitter.com/{}/status/{}'.format(
-                    tweet.user.screen_name,
-                    random_phrase,
-                    tweet.user.screen_name,
-                    tweet.id), in_reply_to_status_id=tweet.id)
-        except tweepy.TweepError:
-            sleep(60 * 15)
-            continue
+        if (not tweet.retweeted and 'RT @' not in tweet.text and
+                tweet.text.endswith('?')):
+            random_phrase = generate_sentence(model)
+            api.update_status('@{} {} https://twitter.com/{}/status/{}'.format(
+                tweet.user.screen_name,
+                random_phrase,
+                tweet.user.screen_name,
+                tweet.id), in_reply_to_status_id=tweet.id)
